@@ -472,6 +472,10 @@ class Pusher implements LoggerAwareInterface, PusherInterface
      */
     public function trigger($channels, $event, $data, $params = array(), $already_encoded = false)
     {
+        if (!isset($params)) {
+            $params = [];
+        }
+
         if (is_string($channels) === true) {
             $channels = array($channels);
         }
@@ -512,7 +516,7 @@ class Pusher implements LoggerAwareInterface, PusherInterface
 
         $post_params = array();
         $post_params['name'] = $event;
-        $post_params['data'] = $data_encoded;
+        $post_params['data'] = json_encode($data_encoded);
         $post_params['channels'] = array_values($channels);
 
         $all_params = array_merge($post_params, $params);
@@ -533,9 +537,13 @@ class Pusher implements LoggerAwareInterface, PusherInterface
             throw new ApiErrorException($response['body'], $response['status']);
         }
 
-        $result = json_decode($response['body']);
+        if (!is_array($response)) {
+            $result = json_decode($response['body'], true);
+        } else {
+            $result = $response;
+        }
 
-        if (property_exists($result, 'channels')) {
+        if (array_key_exists('channels', $result)) {
             $result->channels = get_object_vars($result->channels);
         }
 
